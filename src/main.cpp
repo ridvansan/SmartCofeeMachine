@@ -6,20 +6,57 @@
 
 const char *WIFI_SSID = "ssid";
 const char *WIFI_PASSWORD = "passwd";
-const char *MQTT_BROKER = "ip_of_broker";
+const char *MQTT_BROKER = "192.168.0.7";
 
 
 WiFiClient esp;
 PubSubClient client(esp);
 
+void openRelay() {
+  digitalWrite(RELAY_PIN,HIGH);
+}
+void closeRelay() {
+  digitalWrite(RELAY_PIN,LOW);
+}
+
+
+//TODO Measure the coffee brew duration
+//Function to control relays and keep the machine up for coffee preperation time.
+void makeCoffee() { 
+  openRelay();
+  delay(60*1000);
+  closeRelay();
+}
+
+//Sample code for connecting to the Internet with ESP. Added int return for examine the result. 
+int connect2Internet(String ssid,String password){
+  WiFi.begin(ssid,password);
+  delay(2000);
+  if(WiFi.status() != WL_CONNECTED){
+      Serial.print("Not Connected after 2 seconds\n");
+      Serial.print("Trying again\n");
+      delay(2000);
+      if(WiFi.status() != WL_CONNECTED){
+        Serial.print("Connection to Wifi has failed.\n");
+        return 0;
+      }
+  }
+  return 1;
+}
+
+
+
 void callback(char* topic, byte* payload, unsigned int length){
   Serial.print("Message arrived [");
   Serial.print(topic);
-  Serial.print("] ");
+  Serial.print("]: ");
   char receivedChar = (char)payload[0];
   Serial.print(receivedChar);
+  Serial.print("\n");
   if (receivedChar == '1'){
+    Serial.print("\n...Making Coffee...");
     makeCoffee();
+    Serial.print("\nCoffee is ready\n");
   }
 }
 
@@ -28,7 +65,7 @@ void reconnect() {
   while (!client.connected()){
   Serial.print("Attempting MQTT connection...");
   // Attempt to connect
-  if (client.connect("ESP8266 Client")) {
+  if (client.connect("coffemachine")) {
     Serial.println("connected");
     // ... and subscribe to topic
     client.subscribe("coffeeStatus");
@@ -43,9 +80,18 @@ void reconnect() {
 }
 
 void setup() {
-  connect2Internet("somenetwork","somepassword");
-  pinMode(RELAY_PIN,OUTPUT);
   Serial.begin(9600);
+  delay(3000);
+  if (connect2Internet(WIFI_SSID,WIFI_PASSWORD) == 1){
+    Serial.print("Connected succesfully\n");
+    IPAddress ip;
+    ip = WiFi.localIP();
+    Serial.println(ip);
+  }
+  else{
+    Serial.print("Not Connected\n");
+  }
+  pinMode(RELAY_PIN,OUTPUT);
   client.setServer(MQTT_BROKER, 1883);
   client.setCallback(callback);
 }
@@ -57,35 +103,3 @@ void loop() {
   client.loop();
 }
 
-
-//Sample code for connecting to the Internet with ESP. Added int return for examine the result. 
-int connect2Internet(String ssid,String password){
-  WiFi.begin(ssid,password);
-  delay(2000);
-  if(WiFi.status() != WL_CONNECTED){
-      Serial.print("Not Connected after 2 seconds");
-      Serial.print("Trying again");
-      delay(2000);
-      if(WiFi.status() != WL_CONNECTED){
-        Serial.print("Connection to Wifi has failed.");
-        return 0;
-      }
-  }
-  return 1;
-}
-
-//TODO Measure the coffee brew duration
-//Function to control relays and keep the machine up for coffee preperation time.
-void makeCoffee() { 
-  openRelay();
-  delay(60*1000);
-  closeRelay();
-}
-
-// Function to open or close relays
-void openRelay() {
-  digitalWrite(RELAY_PIN,HIGH);
-}
-void closeRelay() {
-  digitalWrite(RELAY_PIN,LOW);
-}
