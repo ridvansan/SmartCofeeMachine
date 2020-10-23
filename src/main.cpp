@@ -4,8 +4,8 @@
 
 #define RELAY_PIN 3
 
-const char *WIFI_SSID = "ssid";
-const char *WIFI_PASSWORD = "passwd";
+const char *WIFI_SSID = "Kablonet Netmaster-22EB-G";
+const char *WIFI_PASSWORD = "281bbfa2";
 const char *MQTT_BROKER = "192.168.0.7";
 
 
